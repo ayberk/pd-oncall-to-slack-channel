@@ -6,6 +6,7 @@ import (
   "log"
   "net/http"
   "encoding/json"
+  "os"
 )
 
 type User struct {
@@ -21,6 +22,19 @@ type Schedule struct {
     Users []User `json:"users"`
 }
 
+type PdResponse struct {
+    Schedules []Schedule `json:"schedules"`
+}
+
+func updateChannelTopic(topic string, channelId string) {
+    const SLACK_TOKEN = os.Getenv("SLACK_TOKEN")
+
+    const var info_url  = "https://slack.com/api/channels.info?token="+SLACK_TOKEN+"&channel="+channelId
+    const var topic_url = "https://slack.com/api/channels.setTopic?token="+SLACK_TOKEN+"&channel="+channelId+"&topic="+topic
+
+    // TODO error if not present
+}
+
 func main() {
   request, _ := http.NewRequest("GET", "https://api.pagerduty.com/schedules", nil)
   request.Header.Set("Accept", "application/vnd.pagerduty+json;version=2")
@@ -33,19 +47,16 @@ func main() {
 
   body, _ := ioutil.ReadAll(resp.Body)
 
-//  var dat map[string]interface{}
+  var dat PdResponse
 
-//  if err := json.Unmarshal(body, &dat); err != nil {
-//       panic(err)
-//   }
-
-  var ss []Schedule
-
-  if err := json.Unmarshal(body, &ss); err != nil {
+  if err := json.Unmarshal(body, &dat); err != nil {
        panic(err)
-   }
+  }
 
-  fmt.Println(ss)
+  for _, schedule:= range dat.Schedules {
+      fmt.Println(schedule)
+      fmt.Println("")
+  }
 
 //  schedules := dat["schedules"]
 
