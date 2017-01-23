@@ -137,6 +137,8 @@ func getOncallAndUpdateSlackChannel(slackChannelId string, pdScheduleId string) 
 func main() {
 	var PLATFORM_SCHEDULE_ID = "P7CMRA9"
 
+	fmt.Println("Starting the bot...")
+
 	gocron.Every(1).Day().At("22:28").Do(getOncallAndUpdateSlackChannel, "G2K8LQ3SA", PLATFORM_SCHEDULE_ID)
 	<-gocron.Start()
 }
