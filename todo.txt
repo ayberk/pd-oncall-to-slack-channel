@@ -1,1 +1,3 @@
 - Expect the channel name as config, get the matching ID from slack API
+- Ability to handle more than one channel<->oncall
+- Error handling, do nothing if requests fail

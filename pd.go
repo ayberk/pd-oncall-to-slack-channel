@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jasonlvhit/gocron"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -85,20 +86,16 @@ func updateChannelTopic(slackToken string, topic string, channelId string) {
 		query.Add("channel", channelId)
 		query.Add("topic", topic)
 		request.URL.RawQuery = query.Encode()
-		fmt.Println(request.URL)
 
-		resp, err := http.DefaultClient.Do(request)
+		_, err := http.DefaultClient.Do(request)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(resp)
 	}
 }
 
-func main() {
-	var SLACK_TOKEN = os.Getenv("SLACK_TOKEN")
+func getOncallName(pdScheduleId string) string {
 	var PD_TOKEN = os.Getenv("PD_TOKEN")
-	var PLATFORM_SCHEDULE_ID = "P7CMRA9"
 
 	request, _ := http.NewRequest("GET", "https://api.pagerduty.com/oncalls", nil)
 	request.Header.Set("Accept", "application/vnd.pagerduty+json;version=2")
@@ -117,15 +114,29 @@ func main() {
 		panic(err)
 	}
 
-	var oncallName string
 	for _, oncall := range dat.Oncalls {
-		if oncall.Schedule.Id == PLATFORM_SCHEDULE_ID {
+		if oncall.Schedule.Id == pdScheduleId {
 			fmt.Println(oncall.User.Summary)
-			oncallName = oncall.User.Summary
-			break
+			return oncall.User.Summary
 		}
 	}
 
+	// TODO return err
+	return ""
+}
+
+func getOncallAndUpdateSlackChannel(slackChannelId string, pdScheduleId string) {
+	var SLACK_TOKEN = os.Getenv("SLACK_TOKEN")
+
+	var oncallName = getOncallName(pdScheduleId)
+
 	//"C11L5HUJY" -> platformChannelId
-	updateChannelTopic(SLACK_TOKEN, "On call: "+oncallName, "G2K8LQ3SA")
+	// Don't forget to change API endpoint from groups to channels!
+	updateChannelTopic(SLACK_TOKEN, "On call: "+oncallName, slackChannelId)
+}
+func main() {
+	var PLATFORM_SCHEDULE_ID = "P7CMRA9"
+
+	gocron.Every(1).Day().At("22:28").Do(getOncallAndUpdateSlackChannel, "G2K8LQ3SA", PLATFORM_SCHEDULE_ID)
+	<-gocron.Start()
 }
