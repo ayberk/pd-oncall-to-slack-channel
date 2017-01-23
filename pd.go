@@ -68,31 +68,37 @@ func getChannelTopic(slackToken string, channelId string) string {
 		panic(err)
 	}
 
-	fmt.Println(string(body[:]))
-	fmt.Println(dat.Channel.Topic.Value)
-
-	return ""
+	return dat.Channel.Topic.Value
 }
 
 // platform primary schedule id = "P7CMRA9"
 
 func updateChannelTopic(slackToken string, topic string, channelId string) {
 
-	var updateUrl = "https://slack.com/api/channels.setTopic?token=" + slackToken + "&channel=" + channelId + "&topic=" + topic
+	var currentTopic = getChannelTopic(slackToken, channelId)
+	var updateUrl = "https://slack.com/api/groups.setTopic"
 
-	request, _ := http.NewRequest("GET", updateUrl, nil)
+	if topic != currentTopic {
+		request, _ := http.NewRequest("GET", updateUrl, nil)
+		var query = request.URL.Query()
+		query.Add("token", slackToken)
+		query.Add("channel", channelId)
+		query.Add("topic", topic)
+		request.URL.RawQuery = query.Encode()
+		fmt.Println(request.URL)
 
-	resp, err := http.DefaultClient.Do(request)
-	if err != nil {
-		log.Fatal(err)
+		resp, err := http.DefaultClient.Do(request)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(resp)
 	}
-
-	fmt.Println(resp)
 }
 
 func main() {
 	var SLACK_TOKEN = os.Getenv("SLACK_TOKEN")
 	var PD_TOKEN = os.Getenv("PD_TOKEN")
+	var PLATFORM_SCHEDULE_ID = "P7CMRA9"
 
 	request, _ := http.NewRequest("GET", "https://api.pagerduty.com/oncalls", nil)
 	request.Header.Set("Accept", "application/vnd.pagerduty+json;version=2")
@@ -111,21 +117,15 @@ func main() {
 		panic(err)
 	}
 
+	var oncallName string
 	for _, oncall := range dat.Oncalls {
-		if oncall.Schedule.Id == "P7CMRA9" {
+		if oncall.Schedule.Id == PLATFORM_SCHEDULE_ID {
 			fmt.Println(oncall.User.Summary)
+			oncallName = oncall.User.Summary
 			break
 		}
 	}
 
-	fmt.Println(getChannelTopic(SLACK_TOKEN, "C11L5HUJY"))
-
-	//  schedules := dat["schedules"]
-
-	//  var oncalls map[string]string
-	//  oncalls = make(map[string]string)
-
-	//  fmt.Println(schedules)
-
-	//  fmt.Println(string(body))
+	//"C11L5HUJY" -> platformChannelId
+	updateChannelTopic(SLACK_TOKEN, "On call: "+oncallName, "G2K8LQ3SA")
 }
