@@ -1,0 +1,1 @@
+- Expect the channel name as config, get the matching ID from slack API

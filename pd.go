@@ -26,16 +26,56 @@ type PdResponse struct {
     Schedules []Schedule `json:"schedules"`
 }
 
-func updateChannelTopic(topic string, channelId string) {
-    const SLACK_TOKEN = os.Getenv("SLACK_TOKEN")
+type SlackChannel struct {
+    Id string `json:"id"`
+    Name string `json:"name"`
+    Topic SlackTopic `json:"topic"`
+}
 
-    const var info_url  = "https://slack.com/api/channels.info?token="+SLACK_TOKEN+"&channel="+channelId
-    const var topic_url = "https://slack.com/api/channels.setTopic?token="+SLACK_TOKEN+"&channel="+channelId+"&topic="+topic
+type SlackTopic struct {
+    Value string `json:"value"`
+    UnixTimeSet int64 `json:"last_set"`
+    Creator string `json:"creator"`
+}
+
+type SlackResponse struct {
+    Channel SlackChannel `json:"channel"`
+    Ok bool `json:"ok"`
+}
+
+
+func getChannelTopic(slackToken string, channelId string) string {
+  var info_url  = "https://slack.com/api/channels.info?token="+slackToken+"&channel="+channelId
+  request, _ := http.NewRequest("GET", info_url, nil)
+
+  resp, err := http.DefaultClient.Do(request)
+  if err != nil {
+      log.Fatal(err)
+  }
+
+  body, _ := ioutil.ReadAll(resp.Body)
+
+  var dat SlackResponse
+  if err := json.Unmarshal(body, &dat); err != nil {
+       panic(err)
+  }
+
+  fmt.Println(string(body[:]))
+  fmt.Println(dat.Channel.Topic.Value)
+
+  return ""
+}
+
+func updateChannelTopic(slackToken string, topic string, channelId string) {
+
+    //var topic_url = "https://slack.com/api/channels.setTopic?token="+slackToken+"&channel="+channelId+"&topic="+topic
 
     // TODO error if not present
 }
 
 func main() {
+  var SLACK_TOKEN = os.Getenv("SLACK_TOKEN")
+
   request, _ := http.NewRequest("GET", "https://api.pagerduty.com/schedules", nil)
   request.Header.Set("Accept", "application/vnd.pagerduty+json;version=2")
   request.Header.Set("Authorization", "Token token=YqTrgWo4PMh5k5wZubyu")
@@ -57,6 +97,8 @@ func main() {
       fmt.Println(schedule)
       fmt.Println("")
   }
+
+  fmt.Println(getChannelTopic(SLACK_TOKEN, "C11L5HUJY"))
 
 //  schedules := dat["schedules"]
 
