@@ -54,8 +54,13 @@ type SlackResponse struct {
 }
 
 func getChannelTopic(slackToken string, channelId string) string {
-	var info_url = "https://slack.com/api/channels.info?token=" + slackToken + "&channel=" + channelId
-	request, _ := http.NewRequest("GET", info_url, nil)
+	var infoUrl = "https://slack.com/api/channels.info"
+
+	request, _ := http.NewRequest("GET", infoUrl, nil)
+	var query = request.URL.Query()
+	query.Add("token", slackToken)
+	query.Add("channel", channelId)
+	request.URL.RawQuery = query.Encode()
 
 	resp, err := http.DefaultClient.Do(request)
 	if err != nil {
@@ -69,28 +74,24 @@ func getChannelTopic(slackToken string, channelId string) string {
 		panic(err)
 	}
 
+	fmt.Println("Current topic for channel " + channelId + ": " + dat.Channel.Topic.Value)
 	return dat.Channel.Topic.Value
 }
 
-// platform primary schedule id = "P7CMRA9"
-
 func updateChannelTopic(slackToken string, topic string, channelId string) {
 
-	var currentTopic = getChannelTopic(slackToken, channelId)
-	var updateUrl = "https://slack.com/api/groups.setTopic"
+	var updateUrl = "https://slack.com/api/channels.setTopic"
 
-	if topic != currentTopic {
-		request, _ := http.NewRequest("GET", updateUrl, nil)
-		var query = request.URL.Query()
-		query.Add("token", slackToken)
-		query.Add("channel", channelId)
-		query.Add("topic", topic)
-		request.URL.RawQuery = query.Encode()
+	request, _ := http.NewRequest("GET", updateUrl, nil)
+	var query = request.URL.Query()
+	query.Add("token", slackToken)
+	query.Add("channel", channelId)
+	query.Add("topic", topic)
+	request.URL.RawQuery = query.Encode()
 
-		_, err := http.DefaultClient.Do(request)
-		if err != nil {
-			log.Fatal(err)
-		}
+	_, err := http.DefaultClient.Do(request)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -116,7 +117,6 @@ func getOncallName(pdScheduleId string) string {
 
 	for _, oncall := range dat.Oncalls {
 		if oncall.Schedule.Id == pdScheduleId {
-			fmt.Println(oncall.User.Summary)
 			return oncall.User.Summary
 		}
 	}
@@ -126,19 +126,24 @@ func getOncallName(pdScheduleId string) string {
 }
 
 func getOncallAndUpdateSlackChannel(slackChannelId string, pdScheduleId string) {
-	var SLACK_TOKEN = os.Getenv("SLACK_TOKEN")
-
+	fmt.Println("Checking for slack channel with id " + slackChannelId)
+	var slackToken = os.Getenv("SLACK_TOKEN")
+	var prefix = "Engineer on call: "
+	var currentTopic = getChannelTopic(slackToken, slackChannelId)
 	var oncallName = getOncallName(pdScheduleId)
 
-	//"C11L5HUJY" -> platformChannelId
-	// Don't forget to change API endpoint from groups to channels!
-	updateChannelTopic(SLACK_TOKEN, "On call: "+oncallName, slackChannelId)
+	var topic = prefix + oncallName
+	if currentTopic != topic {
+		updateChannelTopic(slackToken, prefix+oncallName, slackChannelId)
+	}
 }
+
 func main() {
 	var PLATFORM_SCHEDULE_ID = "P7CMRA9"
-
+	var PLATFORM_CHANNEL_ID = "C11L5HUJY"
 	fmt.Println("Starting the bot...")
 
-	gocron.Every(1).Day().At("22:28").Do(getOncallAndUpdateSlackChannel, "G2K8LQ3SA", PLATFORM_SCHEDULE_ID)
+	// "G2K8LQ3SA"
+	gocron.Every(1).Day().At("11:02").Do(getOncallAndUpdateSlackChannel, PLATFORM_CHANNEL_ID, PLATFORM_SCHEDULE_ID)
 	<-gocron.Start()
 }
