@@ -134,6 +134,7 @@ func getOncallAndUpdateSlackChannel(slackChannelId string, pdScheduleId string) 
 
 	var topic = prefix + oncallName
 	if currentTopic != topic {
+		fmt.Println("Setting the new topic: " + topic)
 		updateChannelTopic(slackToken, prefix+oncallName, slackChannelId)
 	}
 }
@@ -144,6 +145,7 @@ func main() {
 	fmt.Println("Starting the bot...")
 
 	// "G2K8LQ3SA"
-	gocron.Every(1).Day().At("11:02").Do(getOncallAndUpdateSlackChannel, PLATFORM_CHANNEL_ID, PLATFORM_SCHEDULE_ID)
+	gocron.Every(1).Day().At("19:05").Do(getOncallAndUpdateSlackChannel, PLATFORM_CHANNEL_ID, PLATFORM_SCHEDULE_ID)
+
 	<-gocron.Start()
 }
