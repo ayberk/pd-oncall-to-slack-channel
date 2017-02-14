@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type PdUser struct {
@@ -98,7 +99,11 @@ func updateChannelTopic(slackToken string, topic string, channelId string) {
 func getOncallName(pdScheduleId string) string {
 	var PD_TOKEN = os.Getenv("PD_TOKEN")
 
+	// https://api.pagerduty.com/oncalls?time_zone=UTC&schedule_ids%5B%5D=P7CMRA9%2CTESTETS
 	request, _ := http.NewRequest("GET", "https://api.pagerduty.com/oncalls", nil)
+	var query = request.URL.Query()
+	query.Add("schedule_ids[]", pdScheduleId)
+	request.URL.RawQuery = query.Encode()
 	request.Header.Set("Accept", "application/vnd.pagerduty+json;version=2")
 	request.Header.Set("Authorization", "Token token="+PD_TOKEN)
 
@@ -132,8 +137,8 @@ func getOncallAndUpdateSlackChannel(slackChannelId string, pdScheduleId string) 
 	var currentTopic = getChannelTopic(slackToken, slackChannelId)
 	var oncallName = getOncallName(pdScheduleId)
 
-	var topic = prefix + oncallName
-	if currentTopic != topic {
+	var topic = strings.TrimSpace(prefix + oncallName)
+	if currentTopic != "" && currentTopic != topic {
 		fmt.Println("Setting the new topic: " + topic)
 		updateChannelTopic(slackToken, prefix+oncallName, slackChannelId)
 	}
