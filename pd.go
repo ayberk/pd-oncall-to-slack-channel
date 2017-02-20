@@ -156,5 +156,5 @@ func main() {
 	// "G2K8LQ3SA"
 	gocron.Every(1).Day().At("19:05").Do(getOncallAndUpdateSlackChannel, PLATFORM_CHANNEL_ID, PLATFORM_SCHEDULE_ID)
 
-	//<-gocron.Start()
+	<-gocron.Start()
 }
