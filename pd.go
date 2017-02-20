@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/jasonlvhit/gocron"
 	"io/ioutil"
@@ -96,7 +97,7 @@ func updateChannelTopic(slackToken string, topic string, channelId string) {
 	}
 }
 
-func getOncallName(pdScheduleId string) string {
+func getOncallName(pdScheduleId string) (string, error) {
 	var PD_TOKEN = os.Getenv("PD_TOKEN")
 
 	// https://api.pagerduty.com/oncalls?time_zone=UTC&schedule_ids%5B%5D=P7CMRA9%2CTESTETS
@@ -109,7 +110,7 @@ func getOncallName(pdScheduleId string) string {
 
 	resp, err := http.DefaultClient.Do(request)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -117,17 +118,16 @@ func getOncallName(pdScheduleId string) string {
 	var dat PdOncallsResponse
 
 	if err := json.Unmarshal(body, &dat); err != nil {
-		panic(err)
+		return "", err
 	}
 
 	for _, oncall := range dat.Oncalls {
 		if oncall.Schedule.Id == pdScheduleId {
-			return oncall.User.Summary
+			return oncall.User.Summary, nil
 		}
 	}
 
-	// TODO return err
-	return ""
+	return "", errors.New("couldn't get the on call name")
 }
 
 func getOncallAndUpdateSlackChannel(slackChannelId string, pdScheduleId string) {
@@ -135,7 +135,11 @@ func getOncallAndUpdateSlackChannel(slackChannelId string, pdScheduleId string) 
 	var slackToken = os.Getenv("SLACK_TOKEN")
 	var prefix = "Engineer on call: "
 	var currentTopic = getChannelTopic(slackToken, slackChannelId)
-	var oncallName = getOncallName(pdScheduleId)
+	var oncallName, err = getOncallName(pdScheduleId)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	var topic = strings.TrimSpace(prefix + oncallName)
 	if currentTopic != "" && currentTopic != topic {
@@ -152,5 +156,5 @@ func main() {
 	// "G2K8LQ3SA"
 	gocron.Every(1).Day().At("19:05").Do(getOncallAndUpdateSlackChannel, PLATFORM_CHANNEL_ID, PLATFORM_SCHEDULE_ID)
 
-	<-gocron.Start()
+	//<-gocron.Start()
 }
