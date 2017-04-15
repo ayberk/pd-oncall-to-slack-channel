@@ -149,12 +149,17 @@ func getOncallAndUpdateSlackChannel(slackChannelId string, pdScheduleId string) 
 }
 
 func main() {
-	var PLATFORM_SCHEDULE_ID = "P7CMRA9"
+	// put these into an array
 	var PLATFORM_CHANNEL_ID = "C11L5HUJY"
+	var PLATFORM_SCHEDULE_ID = "P7CMRA9"
+
+	var GATEWAY_CHANNEL_ID = "C148EBE76"
+	var GATEWAY_SCHEDULE_ID = "PDV0B84"
 	fmt.Println("Starting the bot...")
 
 	// "G2K8LQ3SA"
-	gocron.Every(1).Day().At("19:05").Do(getOncallAndUpdateSlackChannel, PLATFORM_CHANNEL_ID, PLATFORM_SCHEDULE_ID)
+	gocron.Every(1).Day().At("18:05").Do(getOncallAndUpdateSlackChannel, PLATFORM_CHANNEL_ID, PLATFORM_SCHEDULE_ID)
+	gocron.Every(1).Day().At("18:05").Do(getOncallAndUpdateSlackChannel, GATEWAY_CHANNEL_ID, GATEWAY_SCHEDULE_ID)
 
 	<-gocron.Start()
 }
