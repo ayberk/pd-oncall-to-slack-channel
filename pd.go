@@ -158,8 +158,8 @@ func main() {
 	fmt.Println("Starting the bot...")
 
 	// "G2K8LQ3SA"
-	gocron.Every(1).Day().At("18:05").Do(getOncallAndUpdateSlackChannel, PLATFORM_CHANNEL_ID, PLATFORM_SCHEDULE_ID)
-	gocron.Every(1).Day().At("18:05").Do(getOncallAndUpdateSlackChannel, GATEWAY_CHANNEL_ID, GATEWAY_SCHEDULE_ID)
+	gocron.Every(30).Minutes().Do(getOncallAndUpdateSlackChannel, PLATFORM_CHANNEL_ID, PLATFORM_SCHEDULE_ID)
+	gocron.Every(30).Minutes().Do(getOncallAndUpdateSlackChannel, GATEWAY_CHANNEL_ID, GATEWAY_SCHEDULE_ID)
 
 	<-gocron.Start()
 }
